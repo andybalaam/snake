@@ -21,12 +21,12 @@ class KeyCode
 
 class Colors
 {
-    def snake
-    def snakeDeadHead
-    def apple
-    def wall
-    def bg
-    def border
+    static def snake         = [0, 255, 0]
+    static def snakeDeadHead = [0, 0, 255]
+    static def apple         = [255, 50, 50]
+    static def wall          = [170, 170, 170]
+    static def bg            = [0, 0, 0]
+    static def border        = [70, 70, 100]
 }
 
 class ScaledGraphics
@@ -34,17 +34,15 @@ class ScaledGraphics
     Graphics2D gfx
     Dimension panelSize
     Integer[] gridSize
-    Colors colors
 
     Integer[] offset
     Double[] scale
 
-    ScaledGraphics( gfx, panelSize, gridSize, colors )
+    ScaledGraphics( gfx, panelSize, gridSize )
     {
         this.gfx = gfx
         this.panelSize = panelSize
         this.gridSize = gridSize
-        this.colors = colors
 
         def shortestLength = Math.min( panelSize.width, panelSize.height )
 
@@ -61,10 +59,10 @@ class ScaledGraphics
 
     def clear()
     {
-        setColor( colors.border )
+        setColor( Colors.border )
         gfx.fillRect( 0, 0, (int)panelSize.width, (int)panelSize.height );
 
-        setColor( colors.bg )
+        setColor( Colors.bg )
         fillRect( [0, 0], gridSize );
     }
 
@@ -125,19 +123,17 @@ class SnakePanel extends JPanel
 {
     Game game
     def gridSize
-    def colors
 
-    public SnakePanel( gridSize, colors )
+    public SnakePanel( gridSize )
     {
         this.game = null // Must set this before use
         this.gridSize = gridSize
-        this.colors = colors;
     }
 
     @Override
     protected void paintComponent( Graphics g )
     {
-        def scaledGfx = new ScaledGraphics( g, getSize(), gridSize, colors );
+        def scaledGfx = new ScaledGraphics( g, getSize(), gridSize );
         drawGrid( gridSize, scaledGfx )
     }
 
@@ -146,27 +142,27 @@ class SnakePanel extends JPanel
         scaledGfx.clear()
         for ( int x = 0; x < gridSize[0]; ++x )
         {
-            scaledGfx.dot( colors.wall, [x, 0] )
-            scaledGfx.dot( colors.wall, [x, gridSize[1] - 1] )
+            scaledGfx.dot( Colors.wall, [x, 0] )
+            scaledGfx.dot( Colors.wall, [x, gridSize[1] - 1] )
+        }
+        for ( int y = 0; y < gridSize[0]; ++y )
+        {
+            scaledGfx.dot( Colors.wall, [0, y] )
+            scaledGfx.dot( Colors.wall, [gridSize[0] - 1, y] )
         }
         if ( game == null )
         {
             return
         }
-        for ( int y = 0; y < gridSize[0]; ++y )
-        {
-            scaledGfx.dot( colors.wall, [0, y] )
-            scaledGfx.dot( colors.wall, [gridSize[0] - 1, y] )
+
+        game.snakeBody.each {
+            scaledGfx.dot( Colors.snake, it )
         }
-        for ( pos in game.snakeBody )
-        {
-            scaledGfx.dot( colors.snake, pos )
-        }
-        scaledGfx.dot( colors.apple, game.applePos )
+        scaledGfx.dot( Colors.apple, game.applePos )
 
         if ( game.dead )
         {
-            scaledGfx.dot( colors.snakeDeadHead, game.snakeBody[0] )
+            scaledGfx.dot( Colors.snakeDeadHead, game.snakeBody[0] )
             scaledGfx.overlay()
             scaledGfx.write( "Score: ${game.snakeBody.size()}.  Press SPACE." )
         }
@@ -174,14 +170,6 @@ class SnakePanel extends JPanel
 }
 
 gridSize = [ 20, 20 ];
-colors = new Colors(
-    snake:         [0, 255, 0],
-    snakeDeadHead: [0, 0, 255],
-    apple:         [255, 50, 50],
-    wall:          [170, 170, 170],
-    bg:            [0, 0, 0],
-    border:        [70, 70, 100]
-)
 
 class Game
 {
@@ -350,7 +338,7 @@ def swing = SwingBuilder.build()
         defaultCloseOperation:WC.EXIT_ON_CLOSE,
     )
     {
-        panel( new SnakePanel( gridSize, colors ), id:'canvas' )
+        panel( new SnakePanel( gridSize ), id:'canvas' )
     }
 }
 
