@@ -1,0 +1,262 @@
+#!/usr/bin/env ruby
+
+require 'gtk2'
+Gtk.init
+
+Up    = Gdk::Keyval::GDK_KEY_Up
+Down  = Gdk::Keyval::GDK_KEY_Down
+Left  = Gdk::Keyval::GDK_KEY_Left
+Right = Gdk::Keyval::GDK_KEY_Right
+
+Snake_color         = [0.0, 1.0, 0]
+SnakeDeadHead_color = [0.0, 0.0, 1]
+Apple_color         = [1.0, 0.2, 0.2]
+Wall_color          = [0.5, 0.5, 0.5]
+Bg_color            = [0.0, 0.0, 0]
+Border_color        = [0.25, 0.25, 0.3]
+Overlay_color       = [0.5, 0.5, 0.5, 0.5]
+
+class Game
+    attr_accessor :grid_size, :snake_body, :dead, :apple_pos
+
+    def initialize
+        @grid_size = [ 20, 20 ]
+        @snake_body = [
+            [ 10, 10 ],
+            [ 10, 11 ],
+            [ 10, 12 ],
+            [ 10, 13 ],
+            [ 10, 14 ],
+        ]
+        @snake_dir = Up
+        @next_dir = Up
+        @dead = false
+        move_apple
+    end
+
+    def move_apple
+        @apple_pos = [
+            1 + rand( @grid_size[0] - 2 ),
+            1 + rand( @grid_size[1] - 2 ),
+        ]
+    end
+
+    def next_pos pos
+        case @snake_dir
+        when Up
+            x = pos[0]
+            y = pos[1] - 1
+        when Down
+            x = pos[0]
+            y = pos[1] + 1
+        when Left
+            x = pos[0] - 1
+            y = pos[1]
+        when Right
+            x = pos[0] + 1
+            y = pos[1]
+        end
+        return [ x, y ]
+    end
+
+    def move_snake
+        @snake_dir = @next_dir
+        @snake_body =
+            [ next_pos( @snake_body[0] ) ] +
+            @snake_body.slice( 0..-2 )
+    end
+
+    def is_apple pos
+        pos == @apple_pos
+    end
+
+    def is_wall pos
+        (
+            pos[0] == 0 or
+            pos[1] == 0 or
+            pos[0] == @grid_size[0] - 1 or
+            pos[1] == @grid_size[1] - 1
+        )
+    end
+
+    def is_body pos
+        if is_apple pos then return false end
+        @snake_body[1..-1].each do |p|
+            if p == pos then return true end
+        end
+        return false
+    end
+
+    def step
+        if @dead then return end
+        move_snake
+        head = snake_body[0]
+        if is_wall head or is_body head
+            @dead = true
+        end
+        if is_apple head then
+            grow_snake
+            move_apple
+        end
+    end
+
+    def grow_snake
+        5.times { @snake_body.push( @snake_body.last ) }
+    end
+
+    def opposite dir1, dir2
+        (
+            ( dir1 == Up    and dir2 == Down  ) or
+            ( dir1 == Down  and dir2 == Up    ) or
+            ( dir1 == Left  and dir2 == Right ) or
+            ( dir1 == Right and dir2 == Left  )
+        )
+    end
+
+    def change_dir dir
+        if not opposite( @snake_dir, dir ) then
+            @next_dir = dir
+        end
+    end
+end
+
+
+class ScaledGraphics
+    def initialize( cr, screen_size, grid_size )
+        @cr = cr
+        @screen_size = screen_size
+        @grid_size = grid_size
+
+        @shortest_length = screen_size.min;
+        @scale = [
+            @shortest_length / grid_size[0],
+            @shortest_length / grid_size[1],
+        ]
+        @offset = [
+            ( @screen_size[0] - ( @scale[0] * grid_size[0] ) ) / 2,
+            ( @screen_size[1] - ( @scale[1] * grid_size[1] ) ) / 2,
+        ]
+    end
+
+    def dot_shape grid_pos, grid_size, clip
+        [
+            @offset[0] + ( @scale[0] * grid_pos[0] ),
+            @offset[1] + ( @scale[1] * grid_pos[1] ),
+            ( @scale[0] * grid_size[0] ) - clip,
+            ( @scale[1] * grid_size[1] ) - clip,
+        ]
+    end
+
+    def rect color, grid_pos, grid_size, clip
+        @cr.set_source_rgb color
+        @cr.rectangle *dot_shape( grid_pos, grid_size, clip )
+        @cr.fill
+    end
+
+    def dot color, grid_pos
+        rect color, grid_pos, [1, 1], 1
+    end
+
+    def clear
+        @cr.set_source_rgb Border_color
+        @cr.rectangle 0, 0, *@screen_size
+        @cr.fill
+        rect Bg_color, [0, 0], @grid_size, 1
+    end
+
+    def overlay
+        @cr.set_source_rgba Overlay_color
+        @cr.rectangle 0, 0, *@screen_size
+        @cr.fill
+    end
+
+    def write text
+        @cr.set_source_rgb [ 1.0, 1.0, 1.0 ]
+        @cr.select_font_face(
+            "Ubuntu",
+            Cairo::FONT_SLANT_NORMAL,
+            Cairo::FONT_WEIGHT_NORMAL
+        )
+        @cr.set_font_size 0.07 * @shortest_length
+        te = @cr.text_extents text
+        @cr.move_to(
+            ( @screen_size[0] - te.width ) / 2,
+            ( @screen_size[1] - te.height ) / 2
+        )
+        @cr.text_path text
+        @cr.fill
+    end
+end
+
+class DrawGrid
+    def initialize game
+        @game = game
+    end
+    def draw gfx
+        gfx.clear
+        sz = @game.grid_size
+        sz[0].times do |x|
+            gfx.dot Wall_color, [x, 0]
+            gfx.dot Wall_color, [x, sz[1] - 1]
+        end
+        sz[1].times do |y|
+            gfx.dot Wall_color, [0, y]
+            gfx.dot Wall_color, [sz[0] - 1, y]
+        end
+        @game.snake_body.each do |pos|
+            gfx.dot Snake_color, pos
+        end
+        gfx.dot Apple_color, @game.apple_pos
+        if @game.dead then
+            gfx.dot SnakeDeadHead_color, @game.snake_body[0]
+            gfx.overlay
+            gfx.write "Score: #{@game.snake_body.size}.  Press SPACE."
+        end
+    end
+end
+
+game = Game.new
+draw = DrawGrid.new game
+
+window = Gtk::Window.new
+window.title = "Snake in Ruby"
+window.set_default_size 600, 600
+window.set_window_position :center
+
+window.signal_connect( "destroy" ) do
+    Gtk.main_quit
+end
+
+canvas = Gtk::DrawingArea.new
+canvas.signal_connect( "expose_event") do |widget, event|
+    cr = widget.window.create_cairo_context
+    screen_size = [ widget.allocation.width, widget.allocation.height ]
+    gfx = ScaledGraphics.new cr, screen_size, game.grid_size
+    draw.draw gfx
+end
+
+window.signal_connect( "key_press_event" ) do |widget, event|
+    v = event.keyval
+    if v == Up or v == Down or v == Left or v == Right then
+        game.change_dir v
+    elsif v == Gdk::Keyval::GDK_Escape
+        Gtk.main_quit
+    elsif v == Gdk::Keyval::GDK_KP_Space or v == Gdk::Keyval::GDK_Return
+        if game.dead then
+            game = Game.new
+            draw = DrawGrid.new game
+        end
+    end
+end
+
+canvas.show
+window.add canvas
+window.show
+
+GLib::Timeout.add 100 do
+    game.step()
+    canvas.queue_draw
+end
+
+Gtk.main
+
