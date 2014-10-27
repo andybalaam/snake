@@ -1,3 +1,7 @@
+
+/* Prerequisites:
+sudo apt-get install groovy */
+
 import groovy.swing.SwingBuilder
 import javax.swing.WindowConstants as WC
 import java.awt.*
