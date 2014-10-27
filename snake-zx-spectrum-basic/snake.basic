@@ -1,0 +1,65 @@
+  900 RANDOMIZE 
+ 1000 DIM x(400)
+ 1010 DIM y(400)
+ 1170 LET d=0
+ 1180 LET s=10
+ 1190 LET e=5
+ 1220 FOR n=1 TO 40
+ 1230 LET x(n)=-1
+ 1240 LET y(n)=-1
+ 1250 NEXT n
+ 1260 FOR n=1 TO e
+ 1270 LET x(n)=10
+ 1280 LET y(n)=9+n
+ 1290 NEXT n
+ 1300 GO SUB 8000
+ 2000 PRINT AT 0,0;"####################"
+ 2010 FOR n=1 TO 18
+ 2020 PRINT AT n,0;"#                  #"
+ 2030 NEXT n
+ 2040 PRINT AT 19,0;"####################"
+ 2050 FOR n=1 TO e
+ 2060 PRINT AT y(n),x(n);"*"
+ 2070 NEXT n
+ 2075 PRINT AT y(e+1),x(e+1);" "
+ 2077 PRINT AT y(1),x(1);"*"
+ 2080 PRINT AT b,a;"o"
+ 2400 IF x(1)<1 OR x(1)>18 OR y(1)<1 OR y(1)>18 THEN PRINT AT 21,0;"You hit a wall!": STOP 
+ 2510 FOR n=2 TO e
+ 2520 IF x(1)=x(n) AND y(1)=y(n) THEN PRINT AT 21,0;"You ate your own tail!": STOP 
+ 2530 NEXT n
+ 3010 LET i=IN 64510
+ 3020 IF i=190 THEN LET i=1
+ 3030 LET k=IN 65022
+ 3040 IF k=190 THEN LET k=1
+ 3050 LET j=IN 57342
+ 3060 IF j=189 THEN LET j=1
+ 3070 LET l=0
+ 3080 IF j=190 THEN LET l=1
+ 4000 IF i=1 AND d<>2 THEN LET d=0
+ 4005 IF l=1 AND d<>3 THEN LET d=1
+ 4010 IF k=1 AND d<>0 THEN LET d=2
+ 4020 IF j=1 AND d<>1 THEN LET d=3
+ 4500 FOR n=e+1 TO 2 STEP -1
+ 4510 LET x(n)=x(n-1)
+ 4520 LET y(n)=y(n-1)
+ 4530 NEXT n
+ 5000 IF d=0 THEN LET y(1)=y(1)-1
+ 5010 IF d=1 THEN LET x(1)=x(1)+1
+ 5020 IF d=2 THEN LET y(1)=y(1)+1
+ 5030 IF d=3 THEN LET x(1)=x(1)-1
+ 5040 IF x(1)=a AND y(1)=b THEN GO SUB 7900
+ 7000 GO TO 2075
+ 7900 REM 
+ 7910 REM SUB eat apple
+ 7920 REM 
+ 7930 LET e=e+5
+ 7940 GO SUB 8000
+ 7950 RETURN 
+ 8000 REM 
+ 8001 REM SUB place apple
+ 8002 REM 
+ 8010 LET a=INT (1+RND*17)
+ 8020 LET b=INT (1+RND*17)
+ 8025 PRINT AT 20,0;"Score:",e
+ 8030 RETURN 
