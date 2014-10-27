@@ -1,5 +1,8 @@
 #!/usr/bin/env ruby
 
+# Prerequisites:
+# sudo apt-get install ruby ruby-gtk2
+
 require 'gtk2'
 Gtk.init
 
