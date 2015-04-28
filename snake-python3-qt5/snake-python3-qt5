@@ -1,0 +1,212 @@
+#!/usr/bin/env python3
+
+import random
+import sys
+from PyQt5 import QtCore, QtGui, QtWidgets
+
+UP     =  QtCore.Qt.Key_Up
+DOWN   =  QtCore.Qt.Key_Down
+LEFT   =  QtCore.Qt.Key_Left
+RIGHT  = QtCore.Qt.Key_Right
+RETURN = QtCore.Qt.Key_Return
+SPACE  = QtCore.Qt.Key_Space
+
+def brush( r, g, b, a=1.0 ):
+    return QtGui.QBrush(
+        QtGui.QColor( 255*r, 255*g, 255*b, 255*a ),
+        QtCore.Qt.SolidPattern
+    )
+
+def make_pen( r, g, b, a=1.0 ):
+    ret = QtGui.QPen( QtGui.QColor( 255*r, 255*g, 255*b, 255*a ) )
+    ret.setWidth( 0 )
+    return ret
+
+pen = make_pen( 0.0, 0.0, 0.0 )
+
+snake_brush         = brush( 0.0, 1.0, 0.0 )
+snakedeadhead_brush = brush( 0.0, 0.0, 1.0 )
+apple_brush         = brush( 1.0, 0.2, 0.2 )
+wall_brush          = brush( 0.6, 0.6, 0.6 )
+bg_brush            = brush( 0.0, 0.0, 0.0 )
+border_brush        = brush( 0.25, 0.25, 0.3 )
+overlay_brush       = brush( 0.5, 0.5, 0.5, 0.5 )
+writing_brush       = brush( 1.0, 1.0, 1.0 )
+
+class MainWindow( QtWidgets.QWidget ):
+    def __init__( self, game ):
+        super( MainWindow, self ).__init__()
+        self.game = game
+
+        self.set_up_window()
+
+        self.scene = QtWidgets.QGraphicsScene( 0, 0, 200, 200 )
+        self.view = QtWidgets.QGraphicsView( self.scene )
+        layout = QtWidgets.QVBoxLayout()
+        layout.setContentsMargins( 0, 0, 0, 0 )
+        layout.addWidget( self.view )
+        self.setLayout( layout )
+        self.grabKeyboard()
+
+    def set_up_window( self ):
+        self.resize( 600, 600 )
+        self.setWindowTitle( 'Snake in Python3+PyQt5' )
+
+    def keyPressEvent( self, event ):
+        used = self.game.key_press( event.key() )
+        if not used:
+            event.ignore()
+
+    def block( self, brush, x, y ):
+        self.scene.addRect( x * 10, y * 10, 10, 10, pen, brush )
+
+    def render( self ):
+        # Inefficient, probably: remove all items and re-draw them.
+        # If not, the scene kinda becomes part of the model...
+        for item in self.scene.items():
+            self.scene.removeItem( item )
+
+        self.scene.setBackgroundBrush( border_brush )
+        self.scene.addRect( 0, 0, 200, 200, pen, bg_brush )
+
+        for x in range( 20 ):
+            self.block( wall_brush, x, 0  )
+            self.block( wall_brush, x, 19 )
+
+        for y in range( 20 ):
+            self.block( wall_brush, 0,  y )
+            self.block( wall_brush, 19, y )
+
+        body = self.game.snake.body
+        for p in body:
+            self.block( snake_brush, *p )
+
+        if not self.game.snake.alive:
+            self.block( snakedeadhead_brush, *(body[0]) )
+
+        self.block( apple_brush, *self.game.apple )
+
+        if not self.game.snake.alive:
+            self.scene.addRect( 0, 0, 200, 200, pen, overlay_brush )
+            score = len( self.game.snake.body )
+            txt = self.scene.addSimpleText( "Score: %d.  Press SPACE." % score )
+            txt.setPos( 20, 90 )
+            txt.setBrush( writing_brush )
+
+        self.view.fitInView( 0, 0, 200, 200, QtCore.Qt.KeepAspectRatio )
+        self.update()
+
+def opposite( dr1, dr2 ):
+    return (
+           ( dr1 == LEFT  and dr2 == RIGHT )
+        or ( dr1 == RIGHT and dr2 == LEFT  )
+        or ( dr1 == UP    and dr2 == DOWN  )
+        or ( dr1 == DOWN  and dr2 == UP    )
+    )
+
+def next_pos( pos, dr ):
+    if   dr == UP:     return pos[0]    , pos[1] - 1
+    elif dr == DOWN:   return pos[0]    , pos[1] + 1
+    elif dr == LEFT:   return pos[0] - 1, pos[1]
+    elif dr == RIGHT:  return pos[0] + 1, pos[1]
+    else: raise Exception( "Unknown direction: " + str( dr ) )
+
+class Snake:
+    def __init__( self ):
+        self.dr = QtCore.Qt.Key_Up
+        self.next_dr = QtCore.Qt.Key_Up
+        self.alive = True
+        self.body = [
+            ( 10, 10 ),
+            ( 10, 11 ),
+            ( 10, 12 ),
+            ( 10, 13 ),
+            ( 10, 14 ),
+        ]
+
+    def change_dir( self, dr ):
+        if not opposite( self.dr, dr ):
+            self.next_dr = dr
+
+    def move( self ):
+        if not self.alive:
+            return
+        self.dr = self.next_dr
+        self.body = [ next_pos( self.body[0], self.dr ) ] + self.body[:-1]
+
+    def grow( self ):
+        self.body += [ self.body[-1] ] * 5
+
+
+class Game:
+    def __init__( self ):
+        self.reset()
+
+    def key_press( self, key ):
+        if key in ( UP, DOWN, LEFT, RIGHT ):
+            self.snake.change_dir( key )
+            return True
+        elif key in ( RETURN, SPACE ) and not self.snake.alive:
+            self.reset()
+        else:
+            return False
+
+    def reset( self ):
+        self.snake = Snake()
+        self.place_apple()
+
+    def place_apple( self ):
+        self.apple = ( random.randint( 1, 18 ), random.randint( 1, 18 ) )
+
+    def step( self ):
+        self.snake.move()
+        if self.snake.body[0] == self.apple:
+            self.snake.grow()
+            self.place_apple()
+        else:
+            self.check_crash()
+
+    def check_crash( self ):
+        front = self.snake.body[0]
+
+        if front[0] < 1 or front[0] >= 19 or front[1] < 1 or front[1] >= 19:
+            self.snake.alive = False
+
+        for b in self.snake.body[1:]:
+            if b == front:
+                self.snake.alive = False
+
+
+class GameLoop:
+    def __init__( self, window, game ):
+        self.window = window
+        self.game = game
+
+    def step( self ):
+        self.game.step()
+        self.window.render()
+
+def main( argv ):
+    app = QtWidgets.QApplication( argv )
+
+    game = Game()
+
+    window = MainWindow( game )
+    window.render()
+    window.show()
+
+    gameloop = GameLoop( window, game )
+
+    timer = QtCore.QTimer()
+    timer.timeout.connect( gameloop.step )
+    timer.start( 100 )
+
+    status = app.exec_()
+    del window # Segfaults on exit if we don't do this!
+    return status
+
+
+if __name__ == '__main__':
+    sys.exit( main( sys.argv ) )
+
+
