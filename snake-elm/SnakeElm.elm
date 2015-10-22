@@ -91,6 +91,8 @@ new_apple_position seed0 size =
 
 -- UPDATE
 
+port startTime : Float
+
 type alias KeyCode = Int
 
 type Action = Tick Time | KeyPress KeyCode
