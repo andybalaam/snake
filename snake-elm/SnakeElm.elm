@@ -141,7 +141,7 @@ frame model now =
 time_step : Model -> Time -> Model
 time_step model now =
     case model.alive of
-        True  -> increase_frame_time now ( move_snake model )
+        True  -> increase_frame_time now ( eat_apple ( move_snake model ) )
         False -> model
 
 increase_frame_time now model =
@@ -154,6 +154,30 @@ increase_frame_time now model =
        {
            model | next_move_time <- ( Just ( next_or_now + frame_time ) )
        }
+
+
+eat_apple : Model -> Model
+eat_apple model =
+    case List.head model.snake.body of
+        Nothing -> model  -- Snake is empty - won't happen
+        Just h  ->
+            if h == model.apple
+               then
+                   let ( apple_pos, seed ) =
+                       new_apple_position model.random_seed world_size
+                   in
+                   {
+                       model |
+                           snake       <- grow_snake model.snake,
+                           apple       <- apple_pos,
+                           random_seed <- seed
+                   }
+               else model
+
+
+grow_snake : Snake -> Snake
+grow_snake snake =
+    { snake | body <- snake.body ++ List.repeat 5 ( Point 0 0 ) }
 
 move_snake : Model -> Model
 move_snake model =
