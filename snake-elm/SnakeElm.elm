@@ -20,7 +20,7 @@ world_size = Size 20 20
 snake_start_x : Int
 snake_start_x = 10
 snake_start_y : Int
-snake_start_y = 5
+snake_start_y = 10
 snake_start_length : Int
 snake_start_length = 5
 
