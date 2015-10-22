@@ -25,7 +25,9 @@ snake_start_length : Int
 snake_start_length = 5
 
 init_seed : Random.Seed
-init_seed = Random.initialSeed 0
+init_seed = Random.initialSeed ( round startTime )
+
+port startTime : Float
 
 -- MODEL
 
@@ -61,11 +63,11 @@ type alias Model =
     }
 
 init : ( Model, Effects Action )
-init = ( init_model, Effects.tick Tick )
+init = ( init_model init_seed, Effects.tick Tick )
 
-init_model : Model
-init_model =
-    let ( apple_pos, seed ) = new_apple_position init_seed world_size
+init_model : Random.Seed -> Model
+init_model s =
+    let ( apple_pos, seed ) = new_apple_position s world_size
     in
         Model True world_size apple_pos init_snake Nothing seed Nothing
 
@@ -91,8 +93,6 @@ new_apple_position seed0 size =
 
 -- UPDATE
 
-port startTime : Float
-
 type alias KeyCode = Int
 
 type Action = Tick Time | KeyPress KeyCode
@@ -108,8 +108,8 @@ process_key model key =
     case model.alive of
         True  -> alive_process_key model key
         False -> case key_to_dir key Nothing of
-            Just a  -> model       -- Ignore direction keys
-            Nothing -> init_model  -- Restart on any other key
+            Just a  -> model                         -- Ignore direction keys
+            Nothing -> init_model model.random_seed  -- Restart on any other key
 
 alive_process_key : Model -> KeyCode -> Model
 alive_process_key model key =
