@@ -34,13 +34,13 @@ type alias Point = { x: Int, y: Int }
 
 type Direction = Up | Down | Left | Right
 
-opposite : Maybe Direction -> Maybe Direction -> Bool
+opposite : Direction -> Direction -> Bool
 opposite a b =
     case ( a, b ) of
-        ( Just Up, Just Down    ) -> True
-        ( Just Down, Just Up    ) -> True
-        ( Just Left, Just Right ) -> True
-        ( Just Right, Just Left ) -> True
+        ( Up, Down    ) -> True
+        ( Down, Up    ) -> True
+        ( Left, Right ) -> True
+        ( Right, Left ) -> True
         ( x, y        ) -> False
 
 type alias Snake =
@@ -106,9 +106,12 @@ process_key model key =
     let new_dir =
         key_to_dir key model.next_dir
     in
-       if opposite ( Just model.snake.dir ) new_dir
-          then model
-          else { model | next_dir <- new_dir }
+       case new_dir of
+           Nothing -> model
+           Just d ->
+               if opposite model.snake.dir d
+                  then model
+                  else { model | next_dir <- new_dir }
 
 key_to_dir : KeyCode -> Maybe Direction -> Maybe Direction
 key_to_dir key default = case key of
