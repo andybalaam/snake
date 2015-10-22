@@ -264,12 +264,34 @@ view address model =
             , class "main_div"
             , onKeyDown address KeyPress
         ]
-        [
-            table
-                [ class "game_table" ]
-                ( game_trs model )
-            --, text ( toString model.next_dir )
-        ]
+        (
+        if model.alive
+           then [ game_table model ]
+           else [ game_table model , score_message model ]
+       )
+
+game_table : Model -> Html
+game_table model = table [ class "game_table" ] ( game_trs model )
+
+score_message : Model -> Html
+score_message model =
+    div
+        [ class "overlay_div" ]
+        [ div [ class "overlay_text" ] ( score_text model ) ]
+
+score_text : Model -> List Html
+score_text model =
+    [
+        p
+            []
+            [
+                text
+                (
+                    "Score: " ++ ( toString ( List.length model.snake.body ) )
+                )
+            ],
+        p [] [ text "Press SPACE" ]
+    ]
 
 game_trs : Model -> List Html
 game_trs model = List.map ( game_tr model ) [1..model.size.height]

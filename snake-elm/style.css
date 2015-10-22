@@ -19,6 +19,31 @@ div.main_div
     transform: translate( -50%, -50% )
 }
 
+div.overlay_div
+{
+    position: absolute;
+    top: 0px;
+    left: 0px;
+    right: 0px;
+    bottom: 0px;
+    background-color: black;
+    opacity: 0.75;
+    z-index: 10;
+}
+
+div.overlay_text
+{
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    margin-right: -50%;
+    transform: translate( -50%, -50% );
+    color: white;
+    font-size: 5em;
+    font-family: Ubuntu, sans-serif;
+    text-align: center;
+}
+
 table.game_table
 {
     background-color: #000000;
