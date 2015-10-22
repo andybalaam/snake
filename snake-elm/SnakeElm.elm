@@ -1,10 +1,11 @@
 module SnakeElm ( Model, init, Action, update, view ) where
 
+import Char
 import Effects exposing ( Effects, tick )
 
 import Html exposing ( .. )
 import Html.Attributes exposing ( class, style, tabindex )
-import Html.Events exposing ( onClick, targetValue, on )
+import Html.Events exposing ( onKeyDown )
 
 import Random exposing ( .. )
 
@@ -33,6 +34,15 @@ type alias Point = { x: Int, y: Int }
 
 type Direction = Up | Down | Left | Right
 
+opposite : Maybe Direction -> Maybe Direction -> Bool
+opposite a b =
+    case ( a, b ) of
+        ( Just Up, Just Down    ) -> True
+        ( Just Down, Just Up    ) -> True
+        ( Just Left, Just Right ) -> True
+        ( Just Right, Just Left ) -> True
+        ( x, y        ) -> False
+
 type alias Snake =
     {
           dir  : Direction
@@ -45,7 +55,7 @@ type alias Model =
         , size           : Size
         , apple          : Point
         , snake          : Snake
-        , latest_key_pressed       : Maybe Direction
+        , next_dir       : Maybe Direction
         , random_seed    : Random.Seed
         , next_move_time : Maybe Time
     }
@@ -81,16 +91,32 @@ new_apple_position seed0 size =
 
 -- UPDATE
 
-type Action = Tick Time | KeyPress String
+type alias KeyCode = Int
+
+type Action = Tick Time | KeyPress KeyCode
 
 update : Action -> Model -> ( Model, Effects Action )
 update action model =
     case action of
-        Tick now   -> ( frame model now, Effects.tick Tick )
-        KeyPress k -> ( process_key model, Effects.none )
+        Tick now     -> ( frame model now, Effects.tick Tick )
+        KeyPress key -> ( process_key model key, Effects.none )
 
-process_key : Model -> Model
-process_key model = { model | latest_key_pressed <- Just Right }
+process_key : Model -> KeyCode -> Model
+process_key model key =
+    let new_dir =
+        key_to_dir key model.next_dir
+    in
+       if opposite ( Just model.snake.dir ) new_dir
+          then model
+          else { model | next_dir <- new_dir }
+
+key_to_dir : KeyCode -> Maybe Direction -> Maybe Direction
+key_to_dir key default = case key of
+    37 -> Just Left
+    38 -> Just Up
+    39 -> Just Right
+    40 -> Just Down
+    _ -> default
 
 frame : Model -> Time -> Model
 frame model now =
@@ -119,11 +145,12 @@ increase_frame_time now model =
 move_snake : Model -> Model
 move_snake model =
     let
-        snake = move_snake_body model.snake
+        m = turn_snake model
+        snake = move_snake_body m.snake
     in
         {
-            model |
-                alive <- ( still_alive snake model.size ),
+            m |
+                alive <- ( still_alive snake m.size ),
                 snake <- snake
         }
 
@@ -140,8 +167,24 @@ still_alive snake size =
             && head.y /= size.height
         )
 
+turn_snake : Model -> Model
+turn_snake model =
+    let
+        snake = model.snake
+    in
+        {
+            model |
+                snake <-
+                {
+                    snake |
+                        dir <- Maybe.withDefault snake.dir model.next_dir
+                },
+                next_dir <- Nothing
+        }
+
 move_snake_body : Snake -> Snake
 move_snake_body snake =
+
     case List.tail snake.body
     of
         Just t  -> Snake snake.dir ( next_head_pos snake :: all_but_last snake.body )
@@ -173,15 +216,15 @@ view : Signal.Address Action -> Model -> Html
 view address model =
     div
         [
-            tabindex 1,
-            class "main_div",
-            on "keydown" targetValue ( Signal.message address << KeyPress )
+              tabindex 1
+            , class "main_div"
+            , onKeyDown address KeyPress
         ]
         [
             table
                 [ class "game_table" ]
-                ( game_trs model ),
-            text ( toString model.latest_key_pressed )
+                ( game_trs model )
+            --, text ( toString model.next_dir )
         ]
 
 game_trs : Model -> List Html
