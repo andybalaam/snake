@@ -14,7 +14,7 @@ import Time exposing ( Time, second )
 -- CONSTANTS
 
 frame_time : Time
-frame_time = 1000
+frame_time = 200
 world_size : Size
 world_size = Size 20 20
 snake_start_x : Int
@@ -168,7 +168,14 @@ still_alive snake size =
             && head.x /= size.width
             && head.y /= 1
             && head.y /= size.height
+            && not ( hit_body head snake.body )
         )
+
+hit_body : Point -> List Point -> Bool
+hit_body head body =
+    case List.tail body of
+        Nothing -> False -- Snake is empty - won't happen
+        Just t -> List.member head t
 
 turn_snake : Model -> Model
 turn_snake model =
