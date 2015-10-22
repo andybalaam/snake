@@ -61,13 +61,13 @@ type alias Model =
     }
 
 init : ( Model, Effects Action )
-init =
+init = ( init_model, Effects.tick Tick )
+
+init_model : Model
+init_model =
     let ( apple_pos, seed ) = new_apple_position init_seed world_size
     in
-        (
-            Model True world_size apple_pos init_snake Nothing seed Nothing,
-            Effects.tick Tick
-        )
+        Model True world_size apple_pos init_snake Nothing seed Nothing
 
 init_snake : Snake
 init_snake =
@@ -103,6 +103,14 @@ update action model =
 
 process_key : Model -> KeyCode -> Model
 process_key model key =
+    case model.alive of
+        True  -> alive_process_key model key
+        False -> case key_to_dir key Nothing of
+            Just a  -> model       -- Ignore direction keys
+            Nothing -> init_model  -- Restart on any other key
+
+alive_process_key : Model -> KeyCode -> Model
+alive_process_key model key =
     let new_dir =
         key_to_dir key model.next_dir
     in
