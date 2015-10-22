@@ -288,7 +288,7 @@ game_td_style : Model -> Point -> List Attribute
 game_td_style model p = [ game_td_style_size model, game_td_class model p ]
 
 game_td_style_size : Model -> Attribute
-game_td_style_size model = style [ ( "width", "20px" ), ( "height", "20px" )]
+game_td_style_size model = style [ ( "width", "30px" ), ( "height", "30px" )]
 
 game_td_class : Model -> Point -> Attribute
 game_td_class model p = class ( "game_td " ++ game_td_class_dyn model p )
