@@ -3,10 +3,12 @@ import SnakeElm exposing ( update, view, init )
 import StartApp
 import Task
 
+port startTime : Float
+
 app =
     StartApp.start
     {
-          init = init
+          init = init startTime
         , update = update
         , view = view
         , inputs = []

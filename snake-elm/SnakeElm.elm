@@ -24,10 +24,8 @@ snake_start_y = 10
 snake_start_length : Int
 snake_start_length = 5
 
-init_seed : Random.Seed
-init_seed = Random.initialSeed ( round startTime )
-
-port startTime : Float
+init_seed : Float -> Random.Seed
+init_seed startTime = Random.initialSeed ( round startTime )
 
 -- MODEL
 
@@ -62,8 +60,8 @@ type alias Model =
         , next_move_time : Maybe Time
     }
 
-init : ( Model, Effects Action )
-init = ( init_model init_seed, Effects.tick Tick )
+init : Float -> ( Model, Effects Action )
+init startTime = ( init_model ( init_seed startTime ), Effects.tick Tick )
 
 init_model : Random.Seed -> Model
 init_model s =
@@ -121,7 +119,7 @@ alive_process_key model key =
            Just d ->
                if opposite model.snake.dir d
                   then model
-                  else { model | next_dir <- new_dir }
+                  else { model | next_dir = new_dir }
 
 key_to_dir : KeyCode -> Maybe Direction -> Maybe Direction
 key_to_dir key default = case key of
@@ -152,7 +150,7 @@ increase_frame_time now model =
             Nothing -> now
     in
        {
-           model | next_move_time <- ( Just ( next_or_now + frame_time ) )
+           model | next_move_time = ( Just ( next_or_now + frame_time ) )
        }
 
 
@@ -168,16 +166,16 @@ eat_apple model =
                    in
                    {
                        model |
-                           snake       <- grow_snake model.snake,
-                           apple       <- apple_pos,
-                           random_seed <- seed
+                           snake       = grow_snake model.snake,
+                           apple       = apple_pos,
+                           random_seed = seed
                    }
                else model
 
 
 grow_snake : Snake -> Snake
 grow_snake snake =
-    { snake | body <- snake.body ++ List.repeat 5 ( Point 0 0 ) }
+    { snake | body = snake.body ++ List.repeat 5 ( Point 0 0 ) }
 
 move_snake : Model -> Model
 move_snake model =
@@ -187,8 +185,8 @@ move_snake model =
     in
         {
             m |
-                alive <- ( still_alive snake m.size ),
-                snake <- snake
+                alive = ( still_alive snake m.size ),
+                snake = snake
         }
 
 
@@ -218,12 +216,12 @@ turn_snake model =
     in
         {
             model |
-                snake <-
+                snake =
                 {
                     snake |
-                        dir <- Maybe.withDefault snake.dir model.next_dir
+                        dir = Maybe.withDefault snake.dir model.next_dir
                 },
-                next_dir <- Nothing
+                next_dir = Nothing
         }
 
 move_snake_body : Snake -> Snake
@@ -310,7 +308,7 @@ game_td_style : Model -> Point -> List Attribute
 game_td_style model p = [ game_td_style_size model, game_td_class model p ]
 
 game_td_style_size : Model -> Attribute
-game_td_style_size model = style [ ( "width", "30px" ), ( "height", "30px" )]
+game_td_style_size model = style [ ( "width", "20px" ), ( "height", "20px" )]
 
 game_td_class : Model -> Point -> Attribute
 game_td_class model p = class ( "game_td " ++ game_td_class_dyn model p )
