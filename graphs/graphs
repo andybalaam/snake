@@ -1,0 +1,36 @@
+#!/usr/bin/python3
+
+import glob
+import pygal
+import sys
+
+out_svg = sys.argv[1]
+
+
+projects = {
+    "Dart": glob.glob("../snake-dart/snake/web/*.dart"),
+    "Elm": glob.glob("../snake-elm/*.elm"),
+    "Groovy": glob.glob("../snake-groovy/*.groovy"),
+    "KotlinJS": glob.glob("../snake-kotlinjs/src/main/kotlin/*.kt"),
+    "Python 3 & Qt5": glob.glob("../snake-python3-qt5/snake-*"),
+    "Ruby & Gtk+": glob.glob("../snake-ruby-gtk2/snake-*"),
+    "Sinclair BASIC": glob.glob("../snake-zx-spectrum-basic/*.basic"),
+}
+
+
+def loc(filename):
+    with open(filename) as f:
+        count = 0
+        for ln in f:
+            if len(ln.strip()) > 0:
+                count += 1
+    return count
+
+
+chart = pygal.HorizontalBar(print_values=True)
+chart.title = "Non-blank lines of code in Snake"
+
+for name, files in projects.items():
+    chart.add(name, [sum(loc(f) for f in files)])
+
+chart.render_to_file(out_svg)
