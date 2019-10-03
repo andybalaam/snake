@@ -4,7 +4,10 @@ enum class Direction {
     LEFT,
     RIGHT;
 
-    fun opposite(): Direction =
+    infix fun oppositeTo(other: Direction): Boolean =
+        this == other.opposite()
+
+    private fun opposite(): Direction =
         when (this) {
             UP -> DOWN
             DOWN -> UP
@@ -16,7 +19,7 @@ enum class Direction {
 class Snake {
     private var nextDir: Direction = Direction.UP
     private var dir = Direction.UP
-    var body: List<Point> = (0..4).map { Point(10, 10 + it) }
+    var body: List<Point> = (0..4).map { Point(x = 10, y = 10 + it) }
     var alive = true
 
     fun step() {
@@ -35,7 +38,7 @@ class Snake {
         }
 
     fun turn(newDir: Direction) {
-        if (newDir != dir.opposite()) {
+        if (!(newDir oppositeTo dir)) {
             nextDir = newDir
         }
     }

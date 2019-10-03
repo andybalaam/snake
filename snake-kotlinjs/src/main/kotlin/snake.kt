@@ -1,6 +1,5 @@
 import org.w3c.dom.HTMLCanvasElement
 import org.w3c.dom.Window
-import org.w3c.dom.events.Event
 import org.w3c.dom.events.KeyboardEvent
 import kotlin.browser.document
 import kotlin.browser.window
@@ -8,7 +7,7 @@ import kotlin.math.min
 import kotlin.random.Random
 
 fun main() {
-    val canvas = document.getElementById("snake-canvas") as HTMLCanvasElement;
+    val canvas = document.getElementById("snake-canvas") as HTMLCanvasElement
     val game = Game(Random.Default)
 
     window.onresize = { scaleCanvas(canvas, window); render(canvas, game) }
