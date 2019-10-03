@@ -7,5 +7,5 @@ experience to form first impressions of them.
 
 ## License
 
-Copyright Andy Balaam 2014-2017.  Released under the GPLv2 or later.  See
+Copyright Andy Balaam 2014-2019.  Released under the GPLv2 or later.  See
 [LICENSE.md](LICENSE.md) for more info.
