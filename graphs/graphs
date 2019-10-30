@@ -4,6 +4,8 @@ import glob
 import pygal
 import sys
 
+from operator import itemgetter
+
 out_svg = sys.argv[1]
 
 
@@ -30,7 +32,11 @@ def loc(filename):
 chart = pygal.HorizontalBar(print_values=True)
 chart.title = "Non-blank lines of code in Snake"
 
+counts = {}
 for name, files in projects.items():
-    chart.add(name, [sum(loc(f) for f in files)])
+    counts[name] = [sum(loc(f) for f in files)]
+
+for name, count in sorted(counts.items(), key=itemgetter(1)):
+    chart.add(name, count)
 
 chart.render_to_file(out_svg)
