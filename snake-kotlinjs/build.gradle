@@ -9,6 +9,7 @@ buildscript {
 }
 
 apply plugin: 'kotlin2js'
+apply plugin: 'kotlin-dce-js'
 
 repositories {
     mavenCentral()
@@ -18,24 +19,17 @@ dependencies {
     compile "org.jetbrains.kotlin:kotlin-stdlib-js:$kotlin_version"
 }
 
-task assembleWeb(type: Sync) {
-    configurations.compile.each { File file ->
-        from(zipTree(file.absolutePath), {
-            includeEmptyDirs = false
-            include { fileTreeElement ->
-                def path = fileTreeElement.path
-                path.endsWith(".js") &&
-                    (
-                        path.startsWith("META-INF/resources/") ||
-                        !path.startsWith("META-INF/")
-                    )
-            }
-        })
-    }
-    from compileKotlin2Js.destinationDir
-    into "${projectDir}/web"
+def outDir = "${projectDir}/web"
 
-    dependsOn classes
+clean.doFirst {
+    delete outDir
 }
 
-assemble.dependsOn assembleWeb
+compileKotlin2Js {
+    kotlinOptions.sourceMap = true
+}
+
+runDceKotlinJs {
+    dceOptions.outputDirectory = outDir
+    dceOptions.devMode = false
+}
